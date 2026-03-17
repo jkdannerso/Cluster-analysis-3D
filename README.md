@@ -33,7 +33,7 @@ DBSCAN_MIN_SAMPLES: Minimum points to form a cluster\
 
 3. Execution\'a0\
 Run the script from your terminal:\'a0\
-bash python 3dcluster_analysis.py
+bash python 3d_cluster_analysis.py
 
 4. Output
 The results are saved as an Excel file containing:
