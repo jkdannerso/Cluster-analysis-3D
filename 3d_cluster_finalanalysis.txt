@@ -1,0 +1,218 @@
+# =====================
+# USER‑TUNABLE PARAMETERS
+# =====================
+INPUT_PATTERN = "./good_clusters/*.xyz"
+OUTPUT_DIR = "./results"
+OUTPUT_PREFIX = "final_goodclusters"
+
+# Physical conversion
+PIXEL_SIZE_NM = 2.728          # pixel → nanometre
+MARGIN_NM = 15.0               # extra margin around the NN‑peak when selecting pairs
+
+# DBSCAN parameters
+DBSCAN_EPS_NM = 54.4
+DBSCAN_MIN_SAMPLES = 2
+
+# NN‑histogram parameters
+NN_HIST_BINS = 50
+
+# Verbosity
+VERBOSE = True
+
+# =====================
+# IMPORTS
+# =====================
+import os, glob
+import pandas as pd
+import numpy as np
+from scipy.spatial import cKDTree
+from sklearn.cluster import DBSCAN
+
+# =====================
+# HELPER FUNCTIONS
+# =====================
+def load_xyz(file_path: str) -> np.ndarray:
+    """Read an XYZ file (whitespace‑separated x y z) into a Nx3 numpy array."""
+    df = pd.read_csv(file_path, sep=r"\s+", header=None, names=["x", "y", "z"])
+    return df.values
+
+
+def nearest_neighbors(points: np.ndarray):
+    """Return NN distances for every point (excluding self‑distance)."""
+    if len(points) < 2:
+        return np.array([])          # no neighbours
+    tree = cKDTree(points)
+    dists, _ = tree.query(points, k=2)   # first column = 0 (self)
+    return dists[:, 1]                  # second column = nearest neighbour
+
+
+def dbscan_clustering(points: np.ndarray, eps_nm: float, min_samples: int = 2):
+    """Run DBSCAN and return an integer label array (‑1 = noise)."""
+    if len(points) < min_samples:
+        return -np.ones(len(points), dtype=int)
+    model = DBSCAN(eps=eps_nm, min_samples=min_samples).fit(points)
+    return model.labels_
+
+
+def cluster_stats(points: np.ndarray, labels: np.ndarray) -> pd.DataFrame:
+    """
+    Build a DataFrame with one row per *valid* cluster (size ≥ 2).
+    Columns:
+        - cluster_id
+        - n_points
+        - cluster_width_nm   (max pairwise distance)
+        - mean_cluster_width_nm (average pairwise distance)
+    """
+    if labels.size == 0:
+        return pd.DataFrame()
+
+    n_clusters = labels.max() + 1          # assumes labels start at 0
+    rows = []
+
+    for cid in range(n_clusters):
+        mask = labels == cid
+        cluster_pts = points[mask]
+
+        if len(cluster_pts) < 2:           # ignore singletons
+            continue
+
+        # pairwise distance matrix
+        dmat = np.sqrt(((cluster_pts[:, None, :] - cluster_pts[None, :, :]) ** 2).sum(axis=2))
+        max_dist = dmat.max()
+        # mean of the *upper* triangle (excluding diagonal)
+        mean_dist = dmat[np.triu_indices(len(cluster_pts), k=1)].mean()
+
+        rows.append({
+            "cluster_id": cid,
+            "n_points": len(cluster_pts),
+            "cluster_width_nm": max_dist,
+            "mean_cluster_width_nm": mean_dist
+        })
+
+    return pd.DataFrame(rows)
+
+
+def global_nn_stats(nn_distances: np.ndarray) -> dict:
+    """Simple summary statistics for the NN distance distribution."""
+    if nn_distances.size == 0:
+        return {"mean_nn_nm": np.nan, "std_nn_nm": np.nan}
+    return {"mean_nn_nm": nn_distances.mean(), "std_nn_nm": nn_distances.std()}
+
+
+# =====================
+# MAIN
+# =====================
+def main():
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    # ------------------------------------------------------------------
+    # 1) Gather all input files
+    # ------------------------------------------------------------------
+    files = glob.glob(INPUT_PATTERN)
+    if not files:
+        print("⚠️  No files matched the pattern:", INPUT_PATTERN)
+        return
+
+    # ------------------------------------------------------------------
+    # Containers for the results that will be concatenated at the end
+    # ------------------------------------------------------------------
+    nn_records = []          # one row per localisation point
+    dbscan_records = []      # one row per DBSCAN cluster
+    nn_all = []              # flat list of all NN distances (for global stats)
+
+    # ------------------------------------------------------------------
+    # 2) Process each file
+    # ------------------------------------------------------------------
+    for fpath in files:
+        if VERBOSE:
+            print(f"🔎 Processing {fpath}")
+
+        # --------------------------------------------------------------
+        # Load & convert to nanometres
+        # --------------------------------------------------------------
+        points = load_xyz(fpath) * PIXEL_SIZE_NM
+
+        # --------------------------------------------------------------
+        # NN analysis
+        # --------------------------------------------------------------
+        nn_dists = nearest_neighbors(points)                # 1‑D array
+        nn_all.extend(nn_dists.tolist())
+
+        # Store per‑point NN distances (useful for later inspection)
+        nn_records.append(
+            pd.DataFrame({
+                "file": os.path.basename(fpath),
+                "point_index": np.arange(len(points)),
+                "nn_dist_nm": nn_dists
+            })
+        )
+
+        # --------------------------------------------------------------
+        # DBSCAN clustering
+        # --------------------------------------------------------------
+        db_labels = dbscan_clustering(points, eps_nm=DBSCAN_EPS_NM,
+                                      min_samples=DBSCAN_MIN_SAMPLES)
+
+        # Build per‑cluster statistics
+        db_df = cluster_stats(points, db_labels)
+        if not db_df.empty:
+            db_df["file"] = os.path.basename(fpath)
+            dbscan_records.append(db_df)
+
+    # ------------------------------------------------------------------
+    # 3) Concatenate results
+    # ------------------------------------------------------------------
+    nn_df = pd.concat(nn_records, ignore_index=True) if nn_records else pd.DataFrame()
+    dbscan_df = pd.concat(dbscan_records, ignore_index=True) if dbscan_records else pd.DataFrame()
+
+    # ------------------------------------------------------------------
+    # 4) Global summary table
+    # ------------------------------------------------------------------
+    # NN‑distance summary
+    nn_summary = global_nn_stats(np.array(nn_all))
+
+    # DBSCAN cluster size / width summary
+    summary = pd.DataFrame({
+        "measure": [
+            "mean_cluster_size_dbscan",
+            "std_cluster_size_dbscan",
+            "mean_cluster_width_dbscan",
+            "std_cluster_width_dbscan",
+            "mean_cluster_mean_width_dbscan",
+            "mean_nn_distance_nm",
+            "std_nn_distance_nm"
+        ],
+        "value": [
+            dbscan_df["n_points"].mean() if not dbscan_df.empty else np.nan,
+            dbscan_df["n_points"].std()  if not dbscan_df.empty else np.nan,
+            dbscan_df["cluster_width_nm"].mean() if not dbscan_df.empty else np.nan,
+            dbscan_df["cluster_width_nm"].std()  if not dbscan_df.empty else np.nan,
+            dbscan_df["mean_cluster_width_nm"].mean() if not dbscan_df.empty else np.nan,
+            nn_summary["mean_nn_nm"],
+            nn_summary["std_nn_nm"]
+        ]
+    })
+
+    # ------------------------------------------------------------------
+    # 5) Write everything to Excel
+    # ------------------------------------------------------------------
+    out_path = os.path.join(OUTPUT_DIR, f"{OUTPUT_PREFIX}.xlsx")
+    with pd.ExcelWriter(out_path, engine="xlsxwriter") as writer:
+        # Raw NN distances
+        nn_df.to_excel(writer, sheet_name="nn_raw", index=False)
+
+        # DBSCAN cluster statistics
+        dbscan_df.to_excel(writer, sheet_name="dbscan_clusters", index=False)
+
+        # Global summary
+        summary.to_excel(writer, sheet_name="summary", index=False)
+
+    if VERBOSE:
+        print(f"✅  Finished! Results written to {out_path}")
+
+
+# ----------------------------------------------------------------------
+# Entry point
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    main()
