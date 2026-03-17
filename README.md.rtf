@@ -1,15 +1,4 @@
-{\rtf1\ansi\ansicpg1252\cocoartf2868
-\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 HelveticaNeue;\f2\fnil\fcharset0 Menlo-Regular;
-}
-{\colortbl;\red255\green255\blue255;\red10\green10\blue10;\red236\green239\blue242;}
-{\*\expandedcolortbl;;\cssrgb\c3922\c3922\c3922;\cssrgb\c94118\c94902\c96078;}
-{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
-{\list\listtemplateid2\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid101\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid2}}
-{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}}
-\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
-\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
-
-\f0\fs24 \cf0 # Cluster Analysis for Cryo-EM Gold Clusters\
+Cluster Analysis for Cryo-EM Gold Clusters\
 \
 This repository contains a Python script for analyzing 3D cluster distributions in Cryo-ET data.\
 \
@@ -24,85 +13,30 @@ Ensure you have Python 3.8+ installed. Install dependencies using:\
 ```bash\
 pip install -r requirements.txt\
 \
-\pard\pardeftab720\partightenfactor0
 
-\f1\fs40 \cf2 \expnd0\expndtw0\kerning0
-Usage\'a0\
-\pard\pardeftab720\partightenfactor0
+Usage
+1. Data Preparation
 
-\fs28 \cf2 \
-\pard\pardeftab720\partightenfactor0
+The script expects 
+.xyz files in a whitespace-separated format (3 columns: x, y, z) without headers.
 
-\fs40 \cf2 1. Data Preparation\'a0\
-\pard\pardeftab720\partightenfactor0
+2. Configuration
 
-\fs32 \cf2 The script expects 
-\f2\fs28 \cb3 .xyz
-\f1\fs32 \cb1  files in a whitespace-separated format (3 columns: x, y, z) without headers.\'a0\
-\pard\pardeftab720\partightenfactor0
+Parameters can be adjusted directly in the 
+USER-TUNABLE PARAMETERS section at the top of 3dcluster_analysis.py
 
-\fs28 \cf2 \
-\pard\pardeftab720\partightenfactor0
+PIXEL_SIZE_NM: Physical scaling \
+\
+DBSCAN_EPS_NM: The maximum distance (eps) for cluster inclusion\
 
-\fs40 \cf2 2. Configuration\'a0\
-\pard\pardeftab720\partightenfactor0
+DBSCAN_MIN_SAMPLES: Minimum points to form a cluster\
 
-\fs32 \cf2 Parameters can be adjusted directly in the 
-\f2\fs28 \cb3 USER-TUNABLE PARAMETERS
-\f1\fs32 \cb1  section at the top of 3d
-\f2\fs28 \cb3 cluster_analysis.py
-\f1\fs32 \cb1 :\'a0\
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls1\ilvl0
-\f2\fs28 \cf2 \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-PIXEL_SIZE_NM
-\f1\fs32 \cb1 : Physical scaling \
-\ls1\ilvl0
-\f2\fs28 \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-DBSCAN_EPS_NM
-\f1\fs32 \cb1 : The maximum distance (eps) for cluster inclusion\
-\ls1\ilvl0
-\f2\fs28 \cb3 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-DBSCAN_MIN_SAMPLES
-\f1\fs32 \cb1 : Minimum points to form a cluster\
-\pard\pardeftab720\partightenfactor0
+3. Execution\'a0\
+Run the script from your terminal:\'a0\
+bash python 3dcluster_analysis.py
 
-\fs28 \cf2 \
-\pard\pardeftab720\partightenfactor0
-
-\fs40 \cf2 3. Execution\'a0\
-\pard\pardeftab720\partightenfactor0
-
-\fs32 \cf2 Run the script from your terminal:\'a0\
-\pard\pardeftab720\partightenfactor0
-
-\fs28 \cf2 \
-\pard\pardeftab720\partightenfactor0
-
-\fs40 \cf2 \cb3 bash\cb1 \
-\pard\pardeftab720\partightenfactor0
-
-\f2\fs28 \cf2 \cb3 python 3dcluster_analysis.py
-\f1\fs24 \cb1 \
-\pard\pardeftab720\qc\partightenfactor0
-
-\fs28 \cf2 \
-\pard\pardeftab720\partightenfactor0
-\cf2 \
-\pard\pardeftab720\partightenfactor0
-
-\fs40 \cf2 4. Output\'a0\
-\pard\pardeftab720\partightenfactor0
-
-\fs32 \cf2 The results are saved as an Excel file containing:\'a0\
-\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\partightenfactor0
-\ls2\ilvl0\cf2 \kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
+4. Output
+The results are saved as an Excel file containing:
 nn_raw: Raw nearest neighbor distances for every localization.\
-\ls2\ilvl0\kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
 dbscan_clusters: Detailed statistics for every identified cluster.\
-\ls2\ilvl0\kerning1\expnd0\expndtw0 {\listtext	\uc0\u8226 	}\expnd0\expndtw0\kerning0
-summary: Global mean and standard deviation for the entire dataset.\'a0\
-\pard\pardeftab720\partightenfactor0
-
-\fs28 \cf2 \
-}
+summary: Global mean and standard deviation for the entire dataset.
