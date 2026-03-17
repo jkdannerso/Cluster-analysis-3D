@@ -1,9 +1,9 @@
 # =====================
 # USER‑TUNABLE PARAMETERS
 # =====================
-INPUT_PATTERN = "./good_clusters/*.xyz"
-OUTPUT_DIR = "./results"
-OUTPUT_PREFIX = "final_goodclusters"
+INPUT_PATTERN = "./*.xyz"
+OUTPUT_DIR = "./output"
+OUTPUT_PREFIX = "name_you_like"
 
 # Physical conversion
 PIXEL_SIZE_NM = 2.728          # pixel → nanometre
